@@ -1,30 +1,60 @@
-var fs = require("fs")
-// var https = require('https')
-// 如果不用 https 的話，要改成引用 http 函式庫
-var http = require("http")
-var socketio = require("socket.io")
-//https 的一些設定，如果不需要使用 ssl 加密連線的話，把內容註解掉就好
-var options = {
-  // key: fs.readFileSync('這個網域的 ssl key 位置'),
-  // cert: fs.readFileSync('這個網域的 ssl fullchain 位置')
-}
-//http & socket port
-var server = http.createServer(options)
-server.listen(4040)
-var io = socketio(server)
-console.log("Server socket 4040 , api 4000")
-//api port
-var app = require("express")()
-var port = 4000
-app.listen(port, function () {
-  console.log("API listening on *:" + port)
+const express = require("express")
+const http = require("http")
+const { Server } = require("socket.io")
+
+const app = express()
+const server = http.createServer(app)
+const io = new Server(server, {
+  cors: {
+    origin: "https://s22shadowl.github.io/svelte-quizzer", // github-page 待補
+    methods: ["GET", "POST"],
+  },
 })
-//用 api 方式建立連線
-app.get("/api/messages", function (req, res) {
-  let messages = "hellow world"
-  res.send(messages)
+
+io.on("connection", (socket) => {
+  // 玩家參加遊戲時
+  socket.on("joinGame", (message) => {
+    console.log("a player connected.", message)
+    // 轉發消息給 host
+    io.emit("hostMessage", message)
+  })
+
+  // host 使遊戲開始時
+  socket.on("gameStart", (message) => {
+    console.log("a game start:", message)
+    // 轉發消息給玩家
+    io.emit("playersMessage", message)
+  })
+
+  // 玩家回答時
+  socket.on("playerAnswer", (message) => {
+    console.log("a player answer:", message)
+    // 轉發消息給 host
+    io.emit("hostMessage", message)
+  })
+
+  // 主持人將題目切換（分數、題目）
+  socket.on("switchQuestion", (message) => {
+    console.log("question now:", message)
+    // 轉發消息給玩家
+    io.emit("playerMessage", message)
+  })
+
+  // 玩家搶答時
+  socket.on("playerQuickAnswer", (message) => {
+    console.log("answer player:", message)
+    // 轉發消息給 host
+    io.emit("hostMessage", message)
+  })
+
+  // 主持人將遊戲結束、終止
+  socket.on("gameStop", (message) => {
+    console.log("game stop:", message)
+    // 轉發消息給玩家
+    io.emit("playerMessage", message)
+  })
 })
-//用 socket 方式建立連線
-io.on("connection", function (socket) {
-  console.log("user connected")
+
+server.listen(4040, () => {
+  console.log("listening on *:4040")
 })
