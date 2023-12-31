@@ -6,7 +6,7 @@ const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
   cors: {
-    origin: "https://s22shadowl.github.io/svelte-quizzer", // github-page 待補
+    origin: "https://svelte-quizzer.vercel.app",
     methods: ["GET", "POST"],
   },
 })
