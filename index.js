@@ -6,17 +6,31 @@ const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
   cors: {
-    origin: "https://svelte-quizzer.vercel.app",
+    origin: "http://localhost:5173",
     methods: ["GET", "POST"],
   },
 })
+
+// 伺服器端紀錄玩家名單
+const players = []
 
 io.on("connection", (socket) => {
   // 玩家參加遊戲時
   socket.on("joinGame", (message) => {
     console.log("a player connected.", message)
-    // 轉發消息給 host
-    io.emit("hostMessage", message)
+
+    // 檢查玩家是否已經在名單中
+    const isReturningPlayer = players.includes(message.name)
+
+    if (!isReturningPlayer) {
+      // 如果玩家不在名單中，添加到名單
+      players.push(message.name)
+    }
+
+    // 轉發消息給 host 和玩家，附帶 isCurrentPlayer 標記
+    const updatedMessage = { ...message, isReturningPlayer: isReturningPlayer }
+    io.emit("hostMessage", updatedMessage)
+    io.emit("playersMessage", updatedMessage)
   })
 
   // host 使遊戲開始時
